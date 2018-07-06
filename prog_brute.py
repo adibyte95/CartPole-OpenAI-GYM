@@ -9,7 +9,7 @@ bestLength = 0
 episode_length =[]
 best_weights = np.zeros(4)
 
-for i in range(100):
+for i in range(10):
     if i%10 ==0:
         print('i: ',i)
     new_weights = np.random.uniform(-1, 1, 4)
