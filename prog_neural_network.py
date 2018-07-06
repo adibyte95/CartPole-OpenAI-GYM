@@ -81,22 +81,26 @@ def get_model():
     model = Sequential()
     model.add(Dense(4, input_dim=4))
     model.add(Activation('relu'))
-    model.add(Dropout(.2))
 
+    model.add(Dense(4))
+    model.add(Activation('relu'))
+    
+     
+    model.add(Dense(4))
+    model.add(Activation('relu'))
     
     model.add(Dense(4))
     model.add(Activation('relu'))
-    model.add(Dropout(.2))
-
+    
     model.add(Dense(4))
     model.add(Activation('relu'))
-    model.add(Dropout(.2))
-
+    
     model.add(Dense(4))
     model.add(Activation('relu'))
-    model.add(Dropout(.2))
-
-
+    
+    model.add(Dense(4))
+    model.add(Activation('relu'))
+    
     model.add(Dense(2))
     model.add(Activation('softmax'))
     
@@ -126,8 +130,10 @@ def testing():
     observation = env.reset()
     no_of_rounds = 100
     max_rounds = no_of_rounds
-
+    min_score = 1000000
+    max_score = -1
     avg_score = 0
+
     while (no_of_rounds > 0):
         # initial score
         score =0
@@ -150,11 +156,17 @@ def testing():
             if done:
                 print('game over!! your score is :  ',score)
                 env.reset()
+                if score > max_score:
+                    max_score = score
+                elif score < min_score:
+                    min_score = score
                 avg_score +=score 
                 break
         no_of_rounds = no_of_rounds - 1
         if no_of_rounds == 0:
             print('avg score : ',avg_score/max_rounds)
+            print('max score: ', max_score)
+            print('min score: ',min_score)
 
 generate_training_data(1000)
 model = get_model()
