@@ -7,39 +7,59 @@ from keras import backend as k
 from keras.models import Sequential
 from keras.layers import Dense, Activation,Dropout
 from sklearn.model_selection import train_test_split
+from keras.callbacks import ModelCheckpoint
+from keras.models import load_model
 
 '''
-NOTE:
+NOTE
 action:
 0 for left 
 1 for right
 '''
+checkpoint = ModelCheckpoint('model.h5', monitor='val_loss',verbose=1, save_best_only=True)
+no_of_observations = 200
+min_score = 60
 
+
+# generate the training data 
 def generate_training_data(no_of_episodes):
     # initize the environment
     env = gym.make('CartPole-v0')
     X = []
     y =[]
+    prev_X = []
+    prev_y= []
+
     for i_episode in range(no_of_episodes):
         observation = env.reset()
-        for t in range(100):
-            env.render()
-            action  = random.randint(0, 1)
-            prev_observation = observation
+        score = 0
+        for t in range(no_of_observations):
+            action  =env.action_space.sample()
             observation, reward, done, info = env.step(action)
+            prev_observation = observation
+            score = score + reward
             if done:
-                # if the game or episode is over
-                print('episode number: ', i_episode)
-                print("Episode finished after {} timesteps".format(t+1))
+                if score > min_score:
+                    prev_X = X
+                    prev_y = y
+                    # if the game or episode is over
+                    print('episode number: ', i_episode)
+                    print("Episode finished after {} timesteps".format(t+1))
+                else:
+                    X= prev_X
+                    y = prev_y
                 break
             else:
                 # if the episode is not over
                 X.append(prev_observation)
-                y.append(action)
-
+                if action ==0:
+                    y.append([1,0])
+                elif action ==1:
+                    y.append([0,1])
+        env.reset()
     # converting them into numpy array
-    X = np.asarray(X)
-    y =np.asarray(y) 
+    X = np.asarray(prev_X)
+    y =np.asarray(prev_y) 
 
     # saving the numpy array
     np.save('X',X)
@@ -52,40 +72,82 @@ def generate_training_data(no_of_episodes):
 # defines the model to be trained
 def get_model():
     model = Sequential()
-    model.add(Dense(512, input_dim=4))
+    model.add(Dense(32, input_dim=4))
     model.add(Activation('relu'))
-    model.add(Dropout(.5))
-
-    model.add(Dense(256))
-    model.add(Activation('relu'))
-    model.add(Dropout(.5))
-
-    model.add(Dense(128))
-    model.add(Activation('relu'))
-    model.add(Dropout(.5))
+    model.add(Dropout(.2))
 
     model.add(Dense(64))
     model.add(Activation('relu'))
-    model.add(Dropout(.5))
+    model.add(Dropout(.2))
 
-    model.add(Dense(1))
+    model.add(Dense(128))
+    model.add(Activation('relu'))
+    model.add(Dropout(.2))
+
+    model.add(Dense(64))
+    model.add(Activation('relu'))
+    model.add(Dropout(.2))
+
+    model.add(Dense(32))
+    model.add(Activation('relu'))
+    model.add(Dropout(.2))
+
+    model.add(Dense(2))
     model.add(Activation('softmax'))
     
     model.summary()
-    model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
+    model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
     return model
     
 
+# trains the model
 def train_model(model):
     # loading the training data from the disk
     X= np.load('X.npy')
     y = np.load('y.npy')
+    # making train test split 
     X_train,X_test,y_train,y_test = train_test_split(X,y,test_size = .2, random_state = 42)
+    # training the model
     model.fit(X_train,y_train,validation_data = [X_test,y_test],verbose = 1,
-    epochs= 100, batch_size = 1000)
+    callbacks=[checkpoint],
+    epochs= 20, batch_size = 10000)
+    # returns the model
     return model
 
-model = get_model()
-mdoel = train_model(model)
+# testing the model 
+def testing():
+    model = load_model('model.h5')
+    env = gym.make('CartPole-v0')
+    env.reset()
+    # initial score
+    score =0
+    # run the loop until the game is lost
+    prev_observation = []
+    action = 0
 
-#generate_training_data(5000)
+    while (True):
+        env.render()
+        if score ==0:
+            action = 0
+        else:
+            prev_observation = np.asarray(prev_observation)
+            prev_observation = np.reshape(prev_observation, (1,4))
+            output = model.predict(prev_observation)
+            if output[0][0] >= output[0][1]:
+                action = 0
+            elif output[0][0] < output[0][1]:
+                action = 1
+
+        new_observation, reward, done, info = env.step(action)
+        prev_observation = new_observation
+        
+        score = score  + reward 
+        if done == 1:
+            print('game over!! your score is :  ',score)
+            env.reset()
+            break
+
+generate_training_data(100000)
+model = get_model()
+model = train_model(model)
+testing()
