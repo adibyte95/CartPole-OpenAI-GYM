@@ -69,8 +69,8 @@ def generate_training_data(no_of_episodes):
     y =np.asarray(prev_y) 
 
     # saving the numpy array
-    np.save('X',X)
-    np.save('y',y)
+    np.save('data/X',X)
+    np.save('data/y',y)
     
     # printing the size
     print('shape of X: ',X.shape)
@@ -110,8 +110,8 @@ def get_model():
 # trains the model
 def train_model(model):
     # loading the training data from the disk
-    X= np.load('X.npy')
-    y = np.load('y.npy')
+    X= np.load('data/X.npy')
+    y = np.load('data/y.npy')
     # making train test split 
     X_train,X_test,y_train,y_test = train_test_split(X,y,test_size = .2, random_state = 42)
     # training the model
