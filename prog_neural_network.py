@@ -79,25 +79,23 @@ def generate_training_data(no_of_episodes):
 # defines the model to be trained
 def get_model():
     model = Sequential()
-    model.add(Dense(128, input_dim=4))
+    model.add(Dense(4, input_dim=4))
     model.add(Activation('relu'))
     model.add(Dropout(.2))
 
-    model.add(Dense(256))
+    
+    model.add(Dense(4))
     model.add(Activation('relu'))
     model.add(Dropout(.2))
 
-    model.add(Dense(512))
+    model.add(Dense(4))
     model.add(Activation('relu'))
     model.add(Dropout(.2))
 
-    model.add(Dense(256))
+    model.add(Dense(4))
     model.add(Activation('relu'))
     model.add(Dropout(.2))
 
-    model.add(Dense(128))
-    model.add(Activation('relu'))
-    model.add(Dropout(.2))
 
     model.add(Dense(2))
     model.add(Activation('softmax'))
@@ -126,7 +124,7 @@ def testing():
     model = load_model('model.h5')
     env = gym.make('CartPole-v0').env
     observation = env.reset()
-    no_of_rounds = 10
+    no_of_rounds = 100
     max_rounds = no_of_rounds
 
     avg_score = 0
@@ -158,7 +156,7 @@ def testing():
         if no_of_rounds == 0:
             print('avg score : ',avg_score/max_rounds)
 
-#generate_training_data(1000)
-#model = get_model()
-#model = train_model(model)
+generate_training_data(1000)
+model = get_model()
+model = train_model(model)
 testing()
