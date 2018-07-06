@@ -126,30 +126,37 @@ def testing():
     model = load_model('model.h5')
     env = gym.make('CartPole-v0').env
     observation = env.reset()
-    # initial score
-    score =0
+    no_of_rounds = 10
+    max_rounds = no_of_rounds
 
-    action = 0
-    while (True):
-        env.render()
-        input('aa')
-        data = np.asarray(observation)
-        data = np.reshape(data, (1,4))
-        output = model.predict(data)
-        '''
-        if output[0][0] >= output[0][1]:
-            action = 1
-        elif output[0][0] < output[0][1]:
-            action = 0
-        print(action)
-        '''
-        observation, reward, done, info = env.step(action)
-        score = score  + reward 
-        
-        if done:
-            print('game over!! your score is :  ',score)
-            env.reset()
-            break
+    avg_score = 0
+    while (no_of_rounds > 0):
+        # initial score
+        score =0
+        action = 0
+        while (True):
+            env.render()
+            data = np.asarray(observation)
+            data = np.reshape(data, (1,4))
+            output = model.predict(data)
+            
+            if output[0][0] >= output[0][1]:
+                action = 1
+            elif output[0][0] < output[0][1]:
+                action = 0
+            print(action)
+            
+            observation, reward, done, info = env.step(action)
+            score = score  + reward 
+            
+            if done:
+                print('game over!! your score is :  ',score)
+                env.reset()
+                avg_score +=score 
+                break
+        no_of_rounds = no_of_rounds - 1
+        if no_of_rounds == 0:
+            print('avg score : ',avg_score/max_rounds)
 
 #generate_training_data(1000)
 #model = get_model()
