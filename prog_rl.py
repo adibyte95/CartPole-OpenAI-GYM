@@ -1,13 +1,15 @@
+# -*- coding: utf-8 -*-
+import random
 import gym
 import numpy as np
-import random
-import keras
-from keras import backend as k 
-from keras.models import Sequential
-from keras.layers import Dense, Dropout
-from keras.optimizers import Adam
-from keras.models import load_model
 from collections import deque
+from keras.models import Sequential
+from keras.layers import Dense
+from keras.optimizers import Adam
+from keras import backend as K
+
+EPISODES = 1000
+
 
 class DQNAgent:
     def __init__(self, state_size, action_size):
@@ -17,9 +19,11 @@ class DQNAgent:
         self.gamma = 0.95    # discount rate
         self.epsilon = 1.0  # exploration rate
         self.epsilon_min = 0.01
-        self.epsilon_decay = 0.995
+        self.epsilon_decay = 0.99
         self.learning_rate = 0.001
         self.model = self._build_model()
+        self.target_model = self._build_model()
+        self.update_target_model()
 
     def _build_model(self):
         # Neural Net for Deep-Q learning Model
@@ -27,81 +31,69 @@ class DQNAgent:
         model.add(Dense(24, input_dim=self.state_size, activation='relu'))
         model.add(Dense(24, activation='relu'))
         model.add(Dense(self.action_size, activation='linear'))
-        model.compile(loss='mse',
+        model.compile(loss="mean_squared_error",
                       optimizer=Adam(lr=self.learning_rate))
         return model
+
+    def update_target_model(self):
+        # copy weights from model to target_model
+        self.target_model.set_weights(self.model.get_weights())
+
     def remember(self, state, action, reward, next_state, done):
         self.memory.append((state, action, reward, next_state, done))
-    
+
     def act(self, state):
         if np.random.rand() <= self.epsilon:
             return random.randrange(self.action_size)
         act_values = self.model.predict(state)
         return np.argmax(act_values[0])  # returns action
-    
-    def replay(self, batch_size,episodes ):
-        
-        # if the length of the memorgy is less than the batch size then simple return 
-        if len(self.memory) < batch_size:
-            return
-        
-        # else
+
+    def replay(self, batch_size):
         minibatch = random.sample(self.memory, batch_size)
-        
         for state, action, reward, next_state, done in minibatch:
-            target = reward
-            if not done:
-              target = reward + self.gamma *np.amax(self.model.predict(next_state)[0])
-            target_f = self.model.predict(state)
-            target_f[0][action] = target
-            self.model.fit(state, target_f, epochs=1, verbose=0)
-            # saving the model
-            if episodes %100 == 0:
-                self.model.save('model_rl.h5')
+            target = self.model.predict(state)
+            if done:
+                target[0][action] = reward
+            else:
+                Q_future  = self.target_model.predict(next_state)[0]
+                target[0][action] = reward + self.gamma * np.amax(Q_future)
+            self.model.fit(state, target, epochs=1, verbose=0)
         if self.epsilon > self.epsilon_min:
             self.epsilon *= self.epsilon_decay
 
-## training portion
+    def load(self, name):
+        self.model.load_weights(name)
+
+    def save(self, name):
+        self.model.save_weights(name)
 
 
-# initialize gym environment and the agent
-env = gym.make('CartPole-v0').env
-agent = DQNAgent(4,2)
-episodes = 1000
-score = []
-# Iterate the game
-for e in range(episodes):
-    # reset state in the beginning of each game
-    state = env.reset()
-    state = np.reshape(state, [1, 4])
-    # time_t represents each frame of the game
-    # Our goal is to keep the pole upright as long as possible until score of 500
-    # the more time_t the more score
-    for time_t in range(5000):
-        # turn this on if you want to render
-        # env.render()
-        # Decide action
-        action = agent.act(state)
-        # Advance the game to the next frame based on the action.
-        # Reward is 1 for every frame the pole survived and -10 if the pole falls
-        next_state, reward, done, _ = env.step(action)
-        reward  = reward  if not done else - 100
-        next_state = np.reshape(next_state, [1, 4])
-        # Remember the previous state, action, reward, and done
-        agent.remember(state, action, reward, next_state, done)
-        # make next_state the new current state for the next frame.
-        state = next_state
-        # done becomes True when the game ends
-        # ex) The agent drops the pole
-        if done:
-            # print the score and break out of the loop
-            print("episode: {}/{}, score: {}"
-                    .format(e, episodes, time_t))
-            score.append(time_t)
-            break
-    # train the agent with the experience of the episode
-    agent.replay(32,e)
+if __name__ == "__main__":
+    env = gym.make('CartPole-v1')
+    state_size = env.observation_space.shape[0]
+    action_size = env.action_space.n
+    agent = DQNAgent(state_size, action_size)
+    # agent.load("./save/cartpole-ddqn.h5")
+    done = False
+    batch_size = 32
 
-print('avg score : ', sum(score)/1000)
-print('maximum score: ', max(score))
-print('min score: ', min(score))
+    for e in range(EPISODES):
+        state = env.reset()
+        state = np.reshape(state, [1, state_size])
+        for time in range(500):
+            # env.render()
+            action = agent.act(state)
+            next_state, reward, done, _ = env.step(action)
+            reward = reward if not done else -10
+            next_state = np.reshape(next_state, [1, state_size])
+            agent.remember(state, action, reward, next_state, done)
+            state = next_state
+            if done:
+                agent.update_target_model()
+                print("episode: {}/{}, score: {}, e: {:.2}"
+                      .format(e, EPISODES, time, agent.epsilon))
+                break
+            if len(agent.memory) > batch_size:
+                agent.replay(batch_size)
+        # if e % 10 == 0:
+#     agent.save("./save/cartpole-ddqn.h5")
