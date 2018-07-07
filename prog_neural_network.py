@@ -134,6 +134,7 @@ def testing():
     max_score = -1
     avg_score = 0
 
+    # playing a number of games
     while (no_of_rounds > 0):
         # initial score
         score =0
@@ -144,6 +145,7 @@ def testing():
             data = np.reshape(data, (1,4))
             output = model.predict(data)
             
+            # checking if the required action is left or right
             if output[0][0] >= output[0][1]:
                 action = 1
             elif output[0][0] < output[0][1]:
@@ -151,9 +153,11 @@ def testing():
             print(action)
             
             observation, reward, done, info = env.step(action)
+            # calculating total reward
             score = score  + reward 
             
             if done:
+                # if the game is over
                 print('game over!! your score is :  ',score)
                 env.reset()
                 if score > max_score:
@@ -163,11 +167,13 @@ def testing():
                 avg_score +=score 
                 break
         no_of_rounds = no_of_rounds - 1
+        # stats about scores 
         if no_of_rounds == 0:
             print('avg score : ',avg_score/max_rounds)
             print('max score: ', max_score)
             print('min score: ',min_score)
 
+# calling the functions
 generate_training_data(1000)
 model = get_model()
 model = train_model(model)
