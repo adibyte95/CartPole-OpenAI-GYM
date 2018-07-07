@@ -19,7 +19,7 @@ action:
 checkpoint = ModelCheckpoint('model.h5', monitor='val_loss',verbose=1, save_best_only=True)
 no_of_observations = 500
 min_score = 100
-
+cpature_observations = .8 * min_score
 
 # generate the training data 
 def generate_training_data(no_of_episodes):
@@ -35,11 +35,13 @@ def generate_training_data(no_of_episodes):
     for i_episode in range(no_of_episodes):
         observation = env.reset()
         score = 0
+        capture_counter = 0
         for t in range(no_of_observations):
             action  =env.action_space.sample()
             observation, reward, done, info = env.step(action)
             prev_observation = observation
             score = score + reward
+            capture_counter = capture_counter + 1
             if done:
                 if score > min_score:
                     prev_X = X
@@ -52,14 +54,15 @@ def generate_training_data(no_of_episodes):
                     y = prev_y
                 break
             else:
-                # if the episode is not over
-                X.append(prev_observation)
-                if action ==0:
-                    left = left + 1
-                    y.append([1,0])
-                elif action ==1:
-                    right = right +1
-                    y.append([0,1])
+                if capture_counter  <= cpature_observations:
+                    # if the episode is not over
+                    X.append(prev_observation)
+                    if action ==0:
+                        left = left + 1
+                        y.append([1,0])
+                    elif action ==1:
+                        right = right +1
+                        y.append([0,1])
         env.reset()
     
     print('left : ', left)
@@ -79,26 +82,20 @@ def generate_training_data(no_of_episodes):
 # defines the model to be trained
 def get_model():
     model = Sequential()
-    model.add(Dense(4, input_dim=4))
+    model.add(Dense(64, input_dim=4))
     model.add(Activation('relu'))
 
-    model.add(Dense(4))
+    model.add(Dense(128))
     model.add(Activation('relu'))
     
      
-    model.add(Dense(4))
+    model.add(Dense(256))
     model.add(Activation('relu'))
     
-    model.add(Dense(4))
+    model.add(Dense(128))
     model.add(Activation('relu'))
     
-    model.add(Dense(4))
-    model.add(Activation('relu'))
-    
-    model.add(Dense(4))
-    model.add(Activation('relu'))
-    
-    model.add(Dense(4))
+    model.add(Dense(64))
     model.add(Activation('relu'))
     
     model.add(Dense(2))
@@ -150,7 +147,6 @@ def testing():
                 action = 1
             elif output[0][0] < output[0][1]:
                 action = 0
-            print(action)
             
             observation, reward, done, info = env.step(action)
             # calculating total reward
@@ -174,7 +170,7 @@ def testing():
             print('min score: ',min_score)
 
 # calling the functions
-generate_training_data(1000)
-model = get_model()
-model = train_model(model)
+#generate_training_data(100000)
+#model = get_model()
+#model = train_model(model)
 testing()
