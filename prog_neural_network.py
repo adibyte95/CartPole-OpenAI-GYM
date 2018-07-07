@@ -16,7 +16,7 @@ action:
 0 for left 
 1 for right
 '''
-checkpoint = ModelCheckpoint('model.h5', monitor='val_loss',verbose=1, save_best_only=True)
+checkpoint = ModelCheckpoint('model/model.h5', monitor='val_loss',verbose=1, save_best_only=True)
 no_of_observations = 500
 min_score = 100
 cpature_observations = .8 * min_score
@@ -122,7 +122,7 @@ def train_model(model):
 
 # testing the model 
 def testing():
-    model = load_model('model.h5')
+    model = load_model('model/model.h5')
     env = gym.make('CartPole-v0').env
     observation = env.reset()
     no_of_rounds = 100
