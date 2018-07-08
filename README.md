@@ -9,13 +9,17 @@ A pole is attached by an un-actuated joint to a cart, which moves along a fricti
 ## 1. random movements 
 this approach chooses an random action given a paticular state of the enviroment. needles to say this approach performs very poorly
 because it does not take into consideration the present state.
+![ramdom rendering gif ](https://github.com/adibyte95/OpenAI-GYM/blob/master/gif%20images/random.gif)
 <br/>
 
 ## 2. using weight vector
 in this approach we take a random weight vecotor of size 4 which is equal to the dimension of the state of the enviroment. A dot product is taken between the weight vector and state and depending upon the value of the output we take a action i.e either left or right. we see that this method outperforms the previous method but this method does not uses any machine learning algorithm 
+![bruteforce rendering gif ](https://github.com/adibyte95/OpenAI-GYM/blob/master/gif%20images/brute_force.gif)
+
 
 ## 3. using deep neural networks
 in this approach we take generate training data by randomly taking actions on the enviromnent . if the run is succesful that is the pole is balanced on the cart from more than 100 time steps we add this example to out training set. this approach aims that we can learn how to balance the pole by learning from good training examples. we then fit the model to this training data and try to predict the outcome that is action for any new observation.
+![neural network rendering gif ](https://github.com/adibyte95/OpenAI-GYM/blob/master/gif%20images/nn.gif)
 
 
 ## 4. using deep Q networks
