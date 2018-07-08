@@ -19,7 +19,6 @@ action:
 checkpoint = ModelCheckpoint('model/model.h5', monitor='val_loss',verbose=1, save_best_only=True)
 no_of_observations = 500
 min_score = 100
-cpature_observations = .8 * min_score
 
 # generate the training data 
 def generate_training_data(no_of_episodes):
@@ -27,49 +26,40 @@ def generate_training_data(no_of_episodes):
     env = gym.make('CartPole-v0').env
     X = []
     y =[]
-    prev_X = []
-    prev_y= []
     left = 0
     right = 0
 
     for i_episode in range(no_of_episodes):
-        observation = env.reset()
+        prev_observation = env.reset()
         score = 0
-        capture_counter = 0
+        X_memory  = []
+        y_memory = []
         for t in range(no_of_observations):
-            action  =env.action_space.sample()
-            observation, reward, done, info = env.step(action)
-            prev_observation = observation
-            score = score + reward
-            capture_counter = capture_counter + 1
-            if done:
-                if score > min_score:
-                    prev_X = X
-                    prev_y = y
-                    # if the game or episode is over
-                    print('episode number: ', i_episode)
-                    print("Episode finished after {} timesteps".format(t+1))
-                else:
-                    X= prev_X
-                    y = prev_y
-                break
+            action = random.randrange(0,2)
+            if action == 0:
+                left = left + 1
             else:
-                if capture_counter  <= cpature_observations:
-                    # if the episode is not over
-                    X.append(prev_observation)
-                    if action ==0:
-                        left = left + 1
-                        y.append([1,0])
-                    elif action ==1:
-                        right = right +1
-                        y.append([0,1])
+                right = right + 1
+            new_observation,reward,done,info = env.step(action)
+            score = score + reward
+            X_memory.append(prev_observation)
+            y_memory.append(action)
+            prev_observation = new_observation
+            if done:
+                if score >min_score:
+                    for data in X_memory:
+                        X.append(data)
+                    for data in y_memory:
+                        y.append(data)
+                    print('episode : ',i_episode, ' score : ',score)
+                break
         env.reset()
     
     print('left : ', left)
     print('right: ',right)
     # converting them into numpy array
-    X = np.asarray(prev_X)
-    y =np.asarray(prev_y) 
+    X = np.asarray(X)
+    y =np.asarray(y) 
 
     # saving the numpy array
     np.save('data/X',X)
@@ -82,27 +72,31 @@ def generate_training_data(no_of_episodes):
 # defines the model to be trained
 def get_model():
     model = Sequential()
-    model.add(Dense(64, input_dim=4))
+    model.add(Dense(128, input_dim=4))
     model.add(Activation('relu'))
+    model.add(Dropout(0.5))
+
+    model.add(Dense(256))
+    model.add(Activation('relu'))
+    model.add(Dropout(.5))
+     
+    model.add(Dense(512))
+    model.add(Activation('relu'))
+    model.add(Dropout(.5))
+
+    model.add(Dense(256))
+    model.add(Activation('relu'))
+    model.add(Dropout(.5))
 
     model.add(Dense(128))
     model.add(Activation('relu'))
-    
-     
-    model.add(Dense(256))
-    model.add(Activation('relu'))
-    
-    model.add(Dense(128))
-    model.add(Activation('relu'))
-    
-    model.add(Dense(64))
-    model.add(Activation('relu'))
-    
-    model.add(Dense(2))
-    model.add(Activation('softmax'))
+    model.add(Dropout(.5))
+
+    model.add(Dense(1))
+    model.add(Activation('sigmoid'))
     
     model.summary()
-    model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
+    model.compile(loss='mean_squared_error', optimizer='adam', metrics=['mse'])
     return model
     
 
@@ -113,19 +107,25 @@ def train_model(model):
     y = np.load('data/y.npy')
     # making train test split 
     X_train,X_test,y_train,y_test = train_test_split(X,y,test_size = .2, random_state = 42)
+    print('X_train: ',X_train.shape)
+    print('y_train:', y_train.shape)
+    print('X_test: ', X_test.shape)
+    print('y_test: ', y_test.shape)
     # training the model
     model.fit(X_train,y_train,validation_data = [X_test,y_test],verbose = 1,
     callbacks=[checkpoint],
-    epochs= 20, batch_size = 10000)
+    epochs= 20, batch_size = 10000,shuffle =True)
+    # saving the model
+    model.save('model/model_dnn.h5')
     # returns the model
     return model
 
 # testing the model 
-def testing():
-    model = load_model('model/model.h5')
+def testing(model):
+    #model = load_model('model/model.h5')
     env = gym.make('CartPole-v0').env
     observation = env.reset()
-    no_of_rounds = 100
+    no_of_rounds = 10
     max_rounds = no_of_rounds
     min_score = 1000000
     max_score = -1
@@ -136,19 +136,23 @@ def testing():
         # initial score
         score =0
         action = 0
+        prev_obs = []
         while (True):
             env.render()
-            data = np.asarray(observation)
-            data = np.reshape(data, (1,4))
-            output = model.predict(data)
+            if len(prev_obs) == 0:
+                action = random.randrange(0,2)
+            else:
+                data = np.asarray(prev_obs)
+                data = np.reshape(data, (1,4))
+                output = model.predict(data)
+                # checking if the required action is left or right
+                if output[0][0] >= .5:
+                    action = 1
+                elif output[0][0] < .5:
+                    action = 0
             
-            # checking if the required action is left or right
-            if output[0][0] >= output[0][1]:
-                action = 1
-            elif output[0][0] < output[0][1]:
-                action = 0
-            
-            observation, reward, done, info = env.step(action)
+            new_observation, reward, done, info = env.step(action)
+            prev_obs = new_observation
             # calculating total reward
             score = score  + reward 
             
@@ -170,7 +174,7 @@ def testing():
             print('min score: ',min_score)
 
 # calling the functions
-#generate_training_data(100000)
-#model = get_model()
-#model = train_model(model)
-testing()
+generate_training_data(1000000)
+model = get_model()
+model = train_model(model)
+testing(model)
