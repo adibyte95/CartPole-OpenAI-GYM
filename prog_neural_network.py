@@ -1,5 +1,7 @@
 # importing the dependencies
 import gym
+from gym import wrappers
+
 import numpy as np 
 import random
 import keras
@@ -16,14 +18,15 @@ action:
 0 for left 
 1 for right
 '''
-checkpoint = ModelCheckpoint('model/model.h5', monitor='val_loss',verbose=1, save_best_only=True)
+checkpoint = ModelCheckpoint('model/model_dnn.h5', monitor='val_loss',verbose=1, save_best_only=True)
 no_of_observations = 500
 min_score = 100
 
 # generate the training data 
 def generate_training_data(no_of_episodes):
+    print('generating training data')
     # initize the environment
-    env = gym.make('CartPole-v0').env
+    env = gym.make('CartPole-v1').env
     X = []
     y =[]
     left = 0
@@ -36,10 +39,14 @@ def generate_training_data(no_of_episodes):
         y_memory = []
         for t in range(no_of_observations):
             action = random.randrange(0,2)
+            
+            ## debugging code
+            '''
             if action == 0:
                 left = left + 1
             else:
                 right = right + 1
+            '''
             new_observation,reward,done,info = env.step(action)
             score = score + reward
             X_memory.append(prev_observation)
@@ -54,9 +61,11 @@ def generate_training_data(no_of_episodes):
                     print('episode : ',i_episode, ' score : ',score)
                 break
         env.reset()
-    
+    #debugging code
+    '''
     print('left : ', left)
     print('right: ',right)
+    '''
     # converting them into numpy array
     X = np.asarray(X)
     y =np.asarray(y) 
@@ -115,15 +124,14 @@ def train_model(model):
     model.fit(X_train,y_train,validation_data = [X_test,y_test],verbose = 1,
     callbacks=[checkpoint],
     epochs= 20, batch_size = 10000,shuffle =True)
-    # saving the model
-    model.save('model/model_dnn.h5')
     # returns the model
     return model
 
 # testing the model 
 def testing(model):
     #model = load_model('model/model.h5')
-    env = gym.make('CartPole-v0').env
+    env = gym.make('CartPole-v1').env
+    env= wrappers.Monitor(env, 'nn_files', force = True)
     observation = env.reset()
     no_of_rounds = 10
     max_rounds = no_of_rounds
@@ -159,12 +167,12 @@ def testing(model):
             if done:
                 # if the game is over
                 print('game over!! your score is :  ',score)
-                env.reset()
                 if score > max_score:
                     max_score = score
                 elif score < min_score:
                     min_score = score
                 avg_score +=score 
+                env.reset()
                 break
         no_of_rounds = no_of_rounds - 1
         # stats about scores 
@@ -174,7 +182,7 @@ def testing(model):
             print('min score: ',min_score)
 
 # calling the functions
-generate_training_data(1000000)
+generate_training_data(50000)
 model = get_model()
 model = train_model(model)
 testing(model)
