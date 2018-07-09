@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import random
 import gym
 import numpy as np
@@ -7,6 +6,7 @@ from keras.models import Sequential
 from keras.layers import Dense
 from keras.optimizers import Adam
 from keras import backend as K
+import matplotlib.pyplot as plt
 
 EPISODES = 1000
 
@@ -19,7 +19,7 @@ class DQNAgent:
         self.gamma = 0.95    # discount rate
         self.epsilon = 1.0  # exploration rate
         self.epsilon_min = 0.01
-        self.epsilon_decay = 0.99
+        self.epsilon_decay = 0.995
         self.learning_rate = 0.001
         self.model = self._build_model()
         self.target_model = self._build_model()
@@ -69,31 +69,39 @@ class DQNAgent:
 
 
 if __name__ == "__main__":
-    env = gym.make('CartPole-v1')
+    env = gym.make('CartPole-v0')
+    env._max_episode_steps = None
     state_size = env.observation_space.shape[0]
     action_size = env.action_space.n
     agent = DQNAgent(state_size, action_size)
-    # agent.load("./save/cartpole-ddqn.h5")
+    # agent.load("model/cartpole-ddqn.h5")
     done = False
     batch_size = 32
 
+    scores = []
     for e in range(EPISODES):
         state = env.reset()
         state = np.reshape(state, [1, state_size])
-        for time in range(500):
+        for time in range(1000):
+            # uncomment this to see the actual rendering 
             # env.render()
             action = agent.act(state)
-            next_state, reward, done, _ = env.step(action)
+            next_state, reward, done, info = env.step(action)
             reward = reward if not done else -10
             next_state = np.reshape(next_state, [1, state_size])
             agent.remember(state, action, reward, next_state, done)
             state = next_state
             if done:
+                scores.append(time)
                 agent.update_target_model()
                 print("episode: {}/{}, score: {}, e: {:.2}"
                       .format(e, EPISODES, time, agent.epsilon))
                 break
             if len(agent.memory) > batch_size:
                 agent.replay(batch_size)
-        # if e % 10 == 0:
-#     agent.save("./save/cartpole-ddqn.h5")
+        if e % 100 == 0:
+            print('saving the model')
+            agent.save("model/cartpole-ddqn.h5")
+            # saving the figure
+            plt.plot(scores)
+            plt.savefig('score_plot')
