@@ -1,3 +1,3 @@
-## description
-model_dnn: model for deep neural network
-model_dqnn: model for deep q network
+## description <br/>
+model_dnn: model for deep neural network<br/>
+model_dqnn: model for deep q network<br/>
