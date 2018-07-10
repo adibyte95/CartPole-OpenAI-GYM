@@ -82,7 +82,8 @@ if __name__ == "__main__":
     for e in range(EPISODES):
         state = env.reset()
         state = np.reshape(state, [1, state_size])
-        for time in range(1000):
+        flag = 0
+        for time in range(5000):
             # uncomment this to see the actual rendering 
             # env.render()
             action = agent.act(state)
@@ -92,13 +93,17 @@ if __name__ == "__main__":
             agent.remember(state, action, reward, next_state, done)
             state = next_state
             if done:
+                flag = 1
                 scores.append(time)
                 agent.update_target_model()
                 print("episode: {}/{}, score: {}, e: {:.2}"
                       .format(e, EPISODES, time, agent.epsilon))
                 break
+            
             if len(agent.memory) > batch_size:
                 agent.replay(batch_size)
+        if flag == 0:
+            print("episode: {}/{}, score: {}, e: {:.2}".format(e, EPISODES, time, agent.epsilon))      
         if e % 100 == 0:
             print('saving the model')
             agent.save("model/cartpole-ddqn.h5")
