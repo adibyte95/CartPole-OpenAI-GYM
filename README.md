@@ -32,8 +32,13 @@ in this approach we take generate training data by randomly taking actions on th
 ## 4. using deep Q networks
 this uses a technique in which the model is rewarded is if makes correct action given the observations of a state and penalty otherwise. initially the model will not be very good at guessing the output but slowly it will become good at predicting the output. exploration and exploitation is carried simaltaneouly to find new improved solutions and to find the good solution in explored search space 
 
+comparison how model performs in the begining and after a few epochs 
 <img src="https://github.com/adibyte95/OpenAI-GYM/blob/master/images/dqn_initial.png"> &nbsp; <img src = "https://github.com/adibyte95/OpenAI-GYM/blob/master/images/dqn_final.png">
+<br/>
+we can see that initialy the model was not able to perform very good, but eventually it learns from its mistakes and performs very good( 1199 is the upper limit ...after this game is forcefully closed)
 
+plot of score during various episodes
 <img src = "https://github.com/adibyte95/OpenAI-GYM/blob/master/images/score_plot.png">
 
+the pole was balanced on the cart for more than 2000 timeframes and outperforms all the approaches used above
 ![reinforcement rendering gif ](https://github.com/adibyte95/OpenAI-GYM/blob/master/gif%20images/reinforcement-gif.gif)
