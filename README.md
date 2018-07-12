@@ -43,3 +43,7 @@ plot of score during various episodes
 the pole was balanced on the cart for more than 2000 timeframes and outperforms all the approaches used above
 ![reinforcement rendering gif ](https://github.com/adibyte95/OpenAI-GYM/blob/master/gif%20images/reinforcement-gif.gif)
 
+## references
+<a href ="https://www.youtube.com/watch?v=3zeg7H6cAJw&t=3s">Sentdex</a>
+<a href = "https://www.youtube.com/watch?v=ZipAjLSNlQc">Machine Learning with Phil</a>
+<a href = "https://keon.io/deep-q-learning/">Medium blog</a>
